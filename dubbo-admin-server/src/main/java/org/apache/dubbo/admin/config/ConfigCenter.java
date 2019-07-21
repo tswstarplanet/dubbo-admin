@@ -52,15 +52,19 @@ public class ConfigCenter {
     @Value("${admin.metadata-report.address:}")
     private String metadataAddress;
 
-    @Value("${admin.registry.group:}")
-    private String group;
+    @Value("${admin.registry.group:dubbo}")
+    private String registryGroup;
+
+    @Value("${admin.config-center.group:dubbo}")
+    private String configCenterGroup;
+
+    @Value("${admin.metadata-report.group:dubbo}")
+    private String metadataGroup;
 
     @Value("${admin.config-center.username:}")
     private String username;
     @Value("${admin.config-center.password:}")
     private String password;
-
-    private static String globalConfigPath = "config/dubbo/dubbo.properties";
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigCenter.class);
 
@@ -78,32 +82,32 @@ public class ConfigCenter {
         GovernanceConfiguration dynamicConfiguration = null;
 
         if (StringUtils.isNotEmpty(configCenter)) {
-            configCenterUrl = formUrl(configCenter, group, username, password);
+            configCenterUrl = formUrl(configCenter, configCenterGroup, username, password);
             dynamicConfiguration = ExtensionLoader.getExtensionLoader(GovernanceConfiguration.class).getExtension(configCenterUrl.getProtocol());
             dynamicConfiguration.setUrl(configCenterUrl);
             dynamicConfiguration.init();
-            String config = dynamicConfiguration.getConfig(globalConfigPath);
+            String config = dynamicConfiguration.getConfig(Constants.GLOBAL_CONFIG_PATH);
 
             if (StringUtils.isNotEmpty(config)) {
                 Arrays.stream(config.split("\n")).forEach( s -> {
                     if(s.startsWith(Constants.REGISTRY_ADDRESS)) {
                         String registryAddress = s.split("=")[1].trim();
-                        registryUrl = formUrl(registryAddress, group, username, password);
+                        registryUrl = formUrl(registryAddress, configCenterGroup, username, password);
                     } else if (s.startsWith(Constants.METADATA_ADDRESS)) {
-                        metadataUrl = formUrl(s.split("=")[1].trim(), group, username, password);
+                        metadataUrl = formUrl(s.split("=")[1].trim(), configCenterGroup, username, password);
                     }
                 });
             }
         }
         if (dynamicConfiguration == null) {
             if (StringUtils.isNotEmpty(registryAddress)) {
-                registryUrl = formUrl(registryAddress, group, username, password);
+                registryUrl = formUrl(registryAddress, registryGroup, username, password);
                 dynamicConfiguration = ExtensionLoader.getExtensionLoader(GovernanceConfiguration.class).getExtension(registryUrl.getProtocol());
                 dynamicConfiguration.setUrl(registryUrl);
                 dynamicConfiguration.init();
-                logger.warn("you are using dubbo.registry.address, which is not recommend, please refer to: https://github.com/apache/incubator-dubbo-ops/wiki/Dubbo-Admin-configuration");
+                logger.warn("you are using dubbo.registry.address, which is not recommend, please refer to: https://github.com/apache/incubator-dubbo-admin/wiki/Dubbo-Admin-configuration");
             } else {
-                throw new ConfigurationException("Either config center or registry address is needed, please refer to https://github.com/apache/incubator-dubbo-ops/wiki/Dubbo-Admin-configuration");
+                throw new ConfigurationException("Either config center or registry address is needed, please refer to https://github.com/apache/incubator-dubbo-admin/wiki/Dubbo-Admin-configuration");
                 //throw exception
             }
         }
@@ -119,9 +123,9 @@ public class ConfigCenter {
         Registry registry = null;
         if (registryUrl == null) {
             if (StringUtils.isBlank(registryAddress)) {
-                throw new ConfigurationException("Either config center or registry address is needed, please refer to https://github.com/apache/incubator-dubbo-ops/wiki/Dubbo-Admin-configuration");
+                throw new ConfigurationException("Either config center or registry address is needed, please refer to https://github.com/apache/incubator-dubbo-admin/wiki/Dubbo-Admin-configuration");
             }
-            registryUrl = formUrl(registryAddress, group, username, password);
+            registryUrl = formUrl(registryAddress, registryGroup, username, password);
         }
         RegistryFactory registryFactory = ExtensionLoader.getExtensionLoader(RegistryFactory.class).getAdaptiveExtension();
         registry = registryFactory.getRegistry(registryUrl);
@@ -137,7 +141,7 @@ public class ConfigCenter {
         MetaDataCollector metaDataCollector = new NoOpMetadataCollector();
         if (metadataUrl == null) {
             if (StringUtils.isNotEmpty(metadataAddress)) {
-                metadataUrl = formUrl(metadataAddress, group, username, password);
+                metadataUrl = formUrl(metadataAddress, metadataGroup, username, password);
             }
         }
         if (metadataUrl != null) {
@@ -145,7 +149,7 @@ public class ConfigCenter {
             metaDataCollector.setUrl(metadataUrl);
             metaDataCollector.init();
         } else {
-            logger.warn("you are using dubbo.registry.address, which is not recommend, please refer to: https://github.com/apache/incubator-dubbo-ops/wiki/Dubbo-Admin-configuration");
+            logger.warn("you are using dubbo.registry.address, which is not recommend, please refer to: https://github.com/apache/incubator-dubbo-admin/wiki/Dubbo-Admin-configuration");
         }
         return metaDataCollector;
     }
@@ -153,7 +157,7 @@ public class ConfigCenter {
     private URL formUrl(String config, String group, String username, String password) {
         URL url = URL.valueOf(config);
         if (StringUtils.isNotEmpty(group)) {
-            url = url.addParameter(org.apache.dubbo.common.Constants.GROUP_KEY, group);
+            url = url.addParameter(Constants.GROUP_KEY, group);
         }
         if (StringUtils.isNotEmpty(username)) {
             url = url.setUsername(username);

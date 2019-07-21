@@ -17,10 +17,11 @@
 package org.apache.dubbo.admin.common.util;
 
 import org.apache.dubbo.admin.model.dto.BaseDTO;
-import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.metadata.definition.model.MethodDefinition;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConvertUtil {
@@ -28,22 +29,13 @@ public class ConvertUtil {
     }
 
     public static Map<String, String> serviceName2Map(String serviceName) {
-        String group = null;
-        String version = null;
-        int i = serviceName.indexOf("/");
-        if (i > 0) {
-            group = serviceName.substring(0, i);
-            serviceName = serviceName.substring(i + 1);
-        }
-        i = serviceName.lastIndexOf(":");
-        if (i > 0) {
-            version = serviceName.substring(i + 1);
-            serviceName = serviceName.substring(0, i);
-        }
+        String group = Tool.getGroup(serviceName);
+        String version = Tool.getVersion(serviceName);
+        String interfaze = Tool.getInterface(serviceName);
 
         Map<String, String> ret = new HashMap<String, String>();
         if (!StringUtils.isEmpty(serviceName)) {
-            ret.put(Constants.INTERFACE_KEY, serviceName);
+            ret.put(Constants.INTERFACE_KEY, interfaze);
         }
         if (!StringUtils.isEmpty(version)) {
             ret.put(Constants.VERSION_KEY, version);
@@ -73,26 +65,11 @@ public class ConvertUtil {
         }
     }
 
-//    public static <T extends BaseDTO> T convertDTOtoStore(T dto) {
-//        if (StringUtils.isNotEmpty(dto.getApplication())) {
-//            dto.setScope("application");
-//            dto.setKey(dto.getApplication());
-//        } else {
-//            dto.setScope("service");
-//            dto.setKey(dto.getService());
-//        }
-//        return dto;
-//    }
-//
-//    public static <T extends BaseDTO> T convertDTOtoDisplay(T dto) {
-//        if (dto == null) {
-//            return null;
-//        }
-//        if(dto.getScope().equals("application")) {
-//            dto.setApplication(dto.getKey());
-//        } else {
-//            dto.setService(dto.getKey());
-//        }
-//        return dto;
-//    }
+    public static Map methodList2Map(List<MethodDefinition> methods) {
+        Map<String, MethodDefinition> res = new HashMap<>();
+        for (int i = 0; i < methods.size(); i++) {
+            res.put(methods.get(i).getName(), methods.get(i));
+        }
+        return res;
+    }
 }
